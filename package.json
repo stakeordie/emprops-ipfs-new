@@ -1,0 +1,17 @@
+{
+  "name": "ipfs-bandwidth-manager",
+  "version": "0.1.0",
+  "description": "A tool for monitoring and limiting IPFS traffic based on configurable settings",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ipfs",
+    "bandwidth",
+    "monitoring",
+    "limits"
+  ],
+  "author": "EmProps",
+  "license": "MIT"
+}
