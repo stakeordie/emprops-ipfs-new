@@ -26,13 +26,20 @@ get_ipfs_stats() {
     local stats
     stats=$(ipfs stats bw 2>/dev/null) || { echo "0"; return; }
     
-    # Parse TotalOut from stats
+    # Parse TotalOut from stats - handle MB/GB units
     local total_out
-    total_out=$(echo "$stats" | grep "TotalOut" | awk '{print $2}' | tr -d ',')
+    total_out=$(echo "$stats" | grep "TotalOut" | awk '{print $2}')
     
-    # If that failed, try alternative parsing
-    if [[ -z "$total_out" ]]; then
-        total_out=$(echo "$stats" | grep -oE 'TotalOut[^0-9]*([0-9]+)' | grep -oE '[0-9]+' | head -1)
+    # Convert MB/GB to bytes if needed
+    if [[ "$total_out" =~ MB$ ]]; then
+        total_out=$(echo "$total_out" | sed 's/MB//' | awk '{print $1 * 1048576}')
+    elif [[ "$total_out" =~ GB$ ]]; then
+        total_out=$(echo "$total_out" | sed 's/GB//' | awk '{print $1 * 1073741824}')
+    elif [[ "$total_out" =~ kB$ ]]; then
+        total_out=$(echo "$total_out" | sed 's/kB//' | awk '{print $1 * 1024}')
+    else
+        # Assume it's already in bytes, remove any non-numeric characters
+        total_out=$(echo "$total_out" | sed 's/[^0-9]//g')
     fi
     
     echo "${total_out:-0}"
