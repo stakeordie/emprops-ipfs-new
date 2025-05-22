@@ -47,6 +47,27 @@ bytes_to_gb() {
     fi
 }
 
+# Function to compare GB values safely
+compare_gb_limit() {
+    local current_gb=$1
+    local limit_gb=$2
+    
+    # Convert to integer comparison by multiplying by 1000 (3 decimal places)
+    local current_int=$(echo "$current_gb * 1000" | bc -l 2>/dev/null | cut -d. -f1)
+    local limit_int=$(echo "$limit_gb * 1000" | bc -l 2>/dev/null | cut -d. -f1)
+    
+    # Default to 0 if conversion failed
+    current_int=${current_int:-0}
+    limit_int=${limit_int:-0}
+    
+    # Return 1 if current >= limit, 0 otherwise
+    if [[ $current_int -ge $limit_int ]]; then
+        echo "1"
+    else
+        echo "0"
+    fi
+}
+
 # Function to get current date info
 get_date_info() {
     local current_date=$(date '+%Y-%m-%d')
@@ -111,15 +132,6 @@ enable_full_mode() {
     log_message "IPFS switched to full participation mode successfully"
 }
 
-# Function to compare GB values (handles decimal comparisons)
-compare_gb() {
-    local value1=$1
-    local value2=$2
-    # Use bc for decimal comparison, return 1 if value1 >= value2, 0 otherwise
-    local result=$(echo "$value1 >= $value2" | bc -l 2>/dev/null)
-    echo "${result:-0}"
-}
-
 # Main bandwidth checking logic
 check_bandwidth() {
     local date_info=$(get_date_info)
@@ -178,11 +190,11 @@ check_bandwidth() {
     
     log_message "Daily usage: ${daily_gb}GB / ${DAILY_LIMIT_GB}GB, Monthly usage: ${monthly_gb}GB / ${MONTHLY_LIMIT_GB}GB"
     
-    # Check limits and switch modes
+    # Check limits and switch modes using safe comparison
     local new_mode="full"
     
     # Check daily limit first (higher priority)
-    if [[ "$(compare_gb "$daily_gb" "$DAILY_LIMIT_GB")" == "1" ]]; then
+    if [[ "$(compare_gb_limit "$daily_gb" "$DAILY_LIMIT_GB")" == "1" ]]; then
         if [[ "$current_mode" != "daily_restricted" ]]; then
             log_message "Daily limit exceeded (${daily_gb}GB >= ${DAILY_LIMIT_GB}GB)"
             enable_restricted_mode
@@ -191,7 +203,7 @@ check_bandwidth() {
             new_mode="daily_restricted"
         fi
     # Check monthly limit
-    elif [[ "$(compare_gb "$monthly_gb" "$MONTHLY_LIMIT_GB")" == "1" ]]; then
+    elif [[ "$(compare_gb_limit "$monthly_gb" "$MONTHLY_LIMIT_GB")" == "1" ]]; then
         if [[ "$current_mode" != "monthly_restricted" ]]; then
             log_message "Monthly limit exceeded (${monthly_gb}GB >= ${MONTHLY_LIMIT_GB}GB)"
             enable_restricted_mode
