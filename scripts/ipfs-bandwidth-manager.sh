@@ -38,9 +38,11 @@ get_ipfs_stats() {
 }
 
 # Function to convert bytes to GB
+# Function to convert bytes to GB - Fixed 2025-05-22 11:58
 bytes_to_gb() {
     local bytes=${1:-0}
-    if [[ "$bytes" =~ ^[0-9]+$ ]] && [[ "$bytes" -gt 0 ]]; then
+    # Use bash arithmetic for integer comparison
+    if [[ "$bytes" =~ ^[0-9]+$ ]] && (( bytes > 0 )); then
         echo "scale=3; $bytes / 1073741824" | bc -l 2>/dev/null || echo "0.000"
     else
         echo "0.000"
@@ -142,9 +144,10 @@ check_bandwidth() {
     local monthly_usage=$(echo "$stats_json" | jq -r '.monthly_usage // 0' 2>/dev/null || echo "0")
     local current_mode=$(echo "$stats_json" | jq -r '.mode // "full"' 2>/dev/null || echo "full")
     
-    # Calculate usage since last check
+    # Calculate usage since last check - Fixed 2025-05-22 11:58
     local usage_delta=$((current_total_out - last_total_out))
-    if [[ $usage_delta -lt 0 ]]; then
+    # Use integer comparison here since usage_delta should be an integer
+    if (( usage_delta < 0 )); then
         usage_delta=0  # Handle IPFS restart or counter reset
     fi
     
