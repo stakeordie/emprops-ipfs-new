@@ -2,6 +2,7 @@
 
 # IPFS Bandwidth Manager for Kubo 0.35.0
 # Manages bandwidth limits for IPFS node participation
+# Fixed 2025-05-22 12:01 - Resolved floating-point arithmetic issues
 
 # Configuration
 DAILY_LIMIT_GB=10
@@ -38,11 +39,15 @@ get_ipfs_stats() {
 }
 
 # Function to convert bytes to GB
-# Function to convert bytes to GB - Fixed 2025-05-22 11:58
+# Function to convert bytes to GB - Fixed 2025-05-22 12:01
 bytes_to_gb() {
     local bytes=${1:-0}
+    # Ensure bytes is treated as an integer
+    bytes=$(echo "$bytes" | sed 's/[^0-9]//g')
+    bytes=${bytes:-0}
+    
     # Use bash arithmetic for integer comparison
-    if [[ "$bytes" =~ ^[0-9]+$ ]] && (( bytes > 0 )); then
+    if (( bytes > 0 )); then
         echo "scale=3; $bytes / 1073741824" | bc -l 2>/dev/null || echo "0.000"
     else
         echo "0.000"
@@ -132,16 +137,30 @@ check_bandwidth() {
     local current_date=$(echo $date_info | cut -d'|' -f1)
     local current_month=$(echo $date_info | cut -d'|' -f2)
     
-    # Get current IPFS stats
+    # Get current IPFS stats - Fixed 2025-05-22 12:01
     local current_total_out=$(get_ipfs_stats)
+    # Ensure current_total_out is an integer
+    current_total_out=$(echo "$current_total_out" | sed 's/[^0-9]//g')
+    current_total_out=${current_total_out:-0}
     
-    # Load previous stats
+    # Load previous stats - Fixed 2025-05-22 12:01
     local stats_json=$(load_stats)
     local last_date=$(echo "$stats_json" | jq -r '.last_date // ""' 2>/dev/null || echo "")
     local last_month=$(echo "$stats_json" | jq -r '.last_month // ""' 2>/dev/null || echo "")
+    
+    # Ensure numeric values are integers
     local last_total_out=$(echo "$stats_json" | jq -r '.last_total_out // 0' 2>/dev/null || echo "0")
+    last_total_out=$(echo "$last_total_out" | sed 's/[^0-9]//g')
+    last_total_out=${last_total_out:-0}
+    
     local daily_usage=$(echo "$stats_json" | jq -r '.daily_usage // 0' 2>/dev/null || echo "0")
+    daily_usage=$(echo "$daily_usage" | sed 's/[^0-9]//g')
+    daily_usage=${daily_usage:-0}
+    
     local monthly_usage=$(echo "$stats_json" | jq -r '.monthly_usage // 0' 2>/dev/null || echo "0")
+    monthly_usage=$(echo "$monthly_usage" | sed 's/[^0-9]//g')
+    monthly_usage=${monthly_usage:-0}
+    
     local current_mode=$(echo "$stats_json" | jq -r '.mode // "full"' 2>/dev/null || echo "full")
     
     # Calculate usage since last check - Fixed 2025-05-22 11:58
@@ -175,7 +194,8 @@ check_bandwidth() {
         fi
     fi
     
-    # Add current usage to counters
+    # Add current usage to counters - Fixed 2025-05-22 12:01
+    # Ensure all values are integers before arithmetic
     daily_usage=$((daily_usage + usage_delta))
     monthly_usage=$((monthly_usage + usage_delta))
     
@@ -239,7 +259,14 @@ case "$1" in
     "status")
         stats_json=$(load_stats)
         daily_usage=$(echo "$stats_json" | jq -r '.daily_usage // 0' 2>/dev/null || echo "0")
+        # Ensure values are integers - Fixed 2025-05-22 12:01
+        daily_usage=$(echo "$daily_usage" | sed 's/[^0-9]//g')
+        daily_usage=${daily_usage:-0}
+        
         monthly_usage=$(echo "$stats_json" | jq -r '.monthly_usage // 0' 2>/dev/null || echo "0")
+        monthly_usage=$(echo "$monthly_usage" | sed 's/[^0-9]//g')
+        monthly_usage=${monthly_usage:-0}
+        
         mode=$(echo "$stats_json" | jq -r '.mode // "unknown"' 2>/dev/null || echo "unknown")
         daily_gb=$(bytes_to_gb $daily_usage)
         monthly_gb=$(bytes_to_gb $monthly_usage)
