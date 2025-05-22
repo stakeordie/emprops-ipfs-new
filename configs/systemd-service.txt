@@ -1,0 +1,29 @@
+[Unit]
+Description=IPFS daemon
+After=network.target
+
+[Service]
+Type=simple
+User=azureuser
+Environment="IPFS_PATH=/data/ipfs"
+ExecStart=/usr/local/bin/ipfs daemon --enable-gc
+Restart=always
+RestartSec=10
+LimitNOFILE=65536
+
+# Security enhancements
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+ProtectHome=true
+ProtectSystem=full
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+MemoryDenyWriteExecute=true
+
+[Install]
+WantedBy=multi-user.target
+
+# FLAG: Created 2025-05-22T10:54:11-04:00

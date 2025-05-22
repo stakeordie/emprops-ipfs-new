@@ -1,0 +1,41 @@
+# Azure File Share Mount Commands for IPFS
+# FLAG: Created 2025-05-22T10:54:11-04:00
+
+# 1. Install required packages
+sudo apt update
+sudo apt install -y cifs-utils
+
+# 2. Create a directory for credentials
+sudo mkdir -p /etc/smbcredentials
+
+# 3. Create credentials file (replace with your actual values)
+sudo bash -c 'cat > /etc/smbcredentials/STORAGE_ACCOUNT_NAME.cred << EOF
+username=STORAGE_ACCOUNT_NAME
+password=STORAGE_ACCOUNT_KEY
+EOF'
+
+# 4. Secure the credentials file
+sudo chmod 600 /etc/smbcredentials/STORAGE_ACCOUNT_NAME.cred
+
+# 5. Create mount point
+sudo mkdir -p /mnt/ipfsdata
+
+# 6. Add entry to /etc/fstab for persistent mounting
+sudo bash -c 'echo "//STORAGE_ACCOUNT_NAME.file.core.windows.net/ipfsdata /mnt/ipfsdata cifs nofail,vers=3.0,credentials=/etc/smbcredentials/STORAGE_ACCOUNT_NAME.cred,serverino" >> /etc/fstab'
+
+# 7. Mount the file share
+sudo mount -a
+
+# 8. Create IPFS directory on the mounted share
+sudo mkdir -p /mnt/ipfsdata/ipfs
+sudo chown azureuser:azureuser /mnt/ipfsdata/ipfs
+
+# 9. Create symbolic link to IPFS data directory
+sudo ln -s /mnt/ipfsdata/ipfs /data/ipfs
+sudo chown -h azureuser:azureuser /data/ipfs
+
+# Notes:
+# - Replace STORAGE_ACCOUNT_NAME with your Azure storage account name
+# - Replace STORAGE_ACCOUNT_KEY with your Azure storage account key
+# - Adjust "azureuser" to match your actual username if different
+# - The mount will persist across reboots due to the fstab entry
