@@ -195,13 +195,13 @@ case "$1" in
     "check")
         check_bandwidth
         ;;
-    "status")
-        local stats_json=$(load_stats)
-        local daily_usage=$(echo $stats_json | jq -r '.daily_usage')
-        local monthly_usage=$(echo $stats_json | jq -r '.monthly_usage')
-        local mode=$(echo $stats_json | jq -r '.mode')
-        local daily_gb=$(bytes_to_gb $daily_usage)
-        local monthly_gb=$(bytes_to_gb $monthly_usage)
+     "status")
+        stats_json=$(load_stats)
+        daily_usage=$(echo $stats_json | jq -r '.daily_usage')
+        monthly_usage=$(echo $stats_json | jq -r '.monthly_usage')
+        mode=$(echo $stats_json | jq -r '.mode')
+        daily_gb=$(bytes_to_gb $daily_usage)
+        monthly_gb=$(bytes_to_gb $monthly_usage)
         
         echo "=== IPFS Bandwidth Status ==="
         echo "Current mode: $mode"
