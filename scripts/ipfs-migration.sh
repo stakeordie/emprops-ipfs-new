@@ -114,8 +114,8 @@ estimate_storage() {
     
     # Get object stats with timeout
     local size_info
-    if timeout 30s ipfs object stat "$hash" 2>/dev/null; then
-        size_info=$(timeout 30s ipfs object stat "$hash" 2>/dev/null)
+    if timeout 30s ipfs dag stat "$hash" 2>/dev/null; then
+        size_info=$(timeout 30s ipfs dag stat "$hash" 2>/dev/null)
         
         # Extract size if available
         local size_bytes=$(echo "$size_info" | grep -i "size" | awk '{print $2}' | head -1)
