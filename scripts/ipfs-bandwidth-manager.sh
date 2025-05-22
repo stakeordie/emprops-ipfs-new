@@ -47,25 +47,17 @@ bytes_to_gb() {
     fi
 }
 
-# Function to compare GB values safely
+# Function to compare GB values safely - Fixed 2025-05-22 11:52
 compare_gb_limit() {
     local current_gb=$1
     local limit_gb=$2
     
-    # Convert to integer comparison by multiplying by 1000 (3 decimal places)
-    local current_int=$(echo "$current_gb * 1000" | bc -l 2>/dev/null | cut -d. -f1)
-    local limit_int=$(echo "$limit_gb * 1000" | bc -l 2>/dev/null | cut -d. -f1)
+    # Use bc for floating point comparison directly
+    # Returns 1 if current >= limit, 0 otherwise
+    local result=$(echo "$current_gb >= $limit_gb" | bc -l 2>/dev/null)
     
-    # Default to 0 if conversion failed
-    current_int=${current_int:-0}
-    limit_int=${limit_int:-0}
-    
-    # Return 1 if current >= limit, 0 otherwise
-    if [[ $current_int -ge $limit_int ]]; then
-        echo "1"
-    else
-        echo "0"
-    fi
+    # Default to 0 if comparison failed
+    echo "${result:-0}"
 }
 
 # Function to get current date info
