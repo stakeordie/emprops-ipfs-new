@@ -26,23 +26,53 @@ get_ipfs_stats() {
     local stats
     stats=$(ipfs stats bw 2>/dev/null) || { echo "0"; return; }
     
-    # Parse TotalOut from stats - handle MB/GB units
-    local total_out
-    total_out=$(echo "$stats" | grep "TotalOut" | awk '{print $2}')
+    # Get the TotalOut line and extract value and unit
+    local total_out_line=$(echo "$stats" | grep "TotalOut")
+    local value=$(echo "$total_out_line" | awk '{print $2}')
+    local unit=$(echo "$total_out_line" | awk '{print $3}')
     
-    # Convert MB/GB to bytes if needed
-    if [[ "$total_out" =~ MB$ ]]; then
-        total_out=$(echo "$total_out" | sed 's/MB//' | awk '{print $1 * 1048576}')
-    elif [[ "$total_out" =~ GB$ ]]; then
-        total_out=$(echo "$total_out" | sed 's/GB//' | awk '{print $1 * 1073741824}')
-    elif [[ "$total_out" =~ kB$ ]]; then
-        total_out=$(echo "$total_out" | sed 's/kB//' | awk '{print $1 * 1024}')
+    # If no unit is separate, try to extract from value
+    if [[ -z "$unit" ]]; then
+        # Extract numeric part and unit from combined value (e.g., "14MB")
+        if [[ "$value" =~ ^([0-9]+\.?[0-9]*)([A-Za-z]+)$ ]]; then
+            local number="${BASH_REMATCH[1]}"
+            unit="${BASH_REMATCH[2]}"
+            value="$number"
+        else
+            # Just numeric value, assume bytes
+            value=$(echo "$value" | sed 's/[^0-9.]//g')
+            unit="B"
+        fi
     else
-        # Assume it's already in bytes, remove any non-numeric characters
-        total_out=$(echo "$total_out" | sed 's/[^0-9]//g')
+        # Clean the value of any non-numeric characters except decimal point
+        value=$(echo "$value" | sed 's/[^0-9.]//g')
     fi
     
-    echo "${total_out:-0}"
+    # Convert to bytes based on unit
+    local bytes=0
+    case "$unit" in
+        "B"|"bytes"|"byte")
+            bytes=$(echo "$value" | cut -d. -f1)  # Remove decimal for bytes
+            ;;
+        "kB"|"KB"|"K")
+            bytes=$(echo "scale=0; $value * 1024" | bc -l)
+            ;;
+        "MB"|"M")
+            bytes=$(echo "scale=0; $value * 1048576" | bc -l)
+            ;;
+        "GB"|"G")
+            bytes=$(echo "scale=0; $value * 1073741824" | bc -l)
+            ;;
+        "TB"|"T")
+            bytes=$(echo "scale=0; $value * 1099511627776" | bc -l)
+            ;;
+        *)
+            # Unknown unit, assume it's already bytes
+            bytes=$(echo "$value" | cut -d. -f1)
+            ;;
+    esac
+    
+    echo "${bytes:-0}"
 }
 
 # Function to convert bytes to GB
