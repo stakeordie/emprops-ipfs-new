@@ -111,6 +111,15 @@ enable_full_mode() {
     log_message "IPFS switched to full participation mode successfully"
 }
 
+# Function to compare GB values (handles decimal comparisons)
+compare_gb() {
+    local value1=$1
+    local value2=$2
+    # Use bc for decimal comparison, return 1 if value1 >= value2, 0 otherwise
+    local result=$(echo "$value1 >= $value2" | bc -l 2>/dev/null)
+    echo "${result:-0}"
+}
+
 # Main bandwidth checking logic
 check_bandwidth() {
     local date_info=$(get_date_info)
@@ -173,7 +182,7 @@ check_bandwidth() {
     local new_mode="full"
     
     # Check daily limit first (higher priority)
-    if (( $(echo "$daily_gb >= $DAILY_LIMIT_GB" | bc -l) )); then
+    if [[ "$(compare_gb "$daily_gb" "$DAILY_LIMIT_GB")" == "1" ]]; then
         if [[ "$current_mode" != "daily_restricted" ]]; then
             log_message "Daily limit exceeded (${daily_gb}GB >= ${DAILY_LIMIT_GB}GB)"
             enable_restricted_mode
@@ -182,7 +191,7 @@ check_bandwidth() {
             new_mode="daily_restricted"
         fi
     # Check monthly limit
-    elif (( $(echo "$monthly_gb >= $MONTHLY_LIMIT_GB" | bc -l) )); then
+    elif [[ "$(compare_gb "$monthly_gb" "$MONTHLY_LIMIT_GB")" == "1" ]]; then
         if [[ "$current_mode" != "monthly_restricted" ]]; then
             log_message "Monthly limit exceeded (${monthly_gb}GB >= ${MONTHLY_LIMIT_GB}GB)"
             enable_restricted_mode
