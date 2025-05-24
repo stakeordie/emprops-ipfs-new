@@ -48,15 +48,15 @@ check_bandwidth_status() {
         echo "$status_output" | tee -a "$LOG_FILE"
         
         # Check if we're in restricted mode
-        if echo "$status_output" | grep -q "restricted"; then
-            print_warning "Currently in bandwidth restricted mode"
-            read -p "Continue with migration anyway? (y/N): " -n 1 -r
-            echo ""
-            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-                print_status "Migration cancelled due to bandwidth restrictions"
-                exit 0
-            fi
-        fi
+        # if echo "$status_output" | grep -q "restricted"; then
+        #     print_warning "Currently in bandwidth restricted mode"
+        #     read -p "Continue with migration anyway? (y/N): " -n 1 -r
+        #     echo ""
+        #     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        #         print_status "Migration cancelled due to bandwidth restrictions"
+        #         exit 0
+        #     fi
+        # fi
     else
         print_warning "Bandwidth manager not found at $BANDWIDTH_MANAGER"
     fi
