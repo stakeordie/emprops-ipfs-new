@@ -14,6 +14,7 @@ RETRY_ATTEMPTS=3
 BANDWIDTH_MANAGER="/usr/local/bin/ipfs-bandwidth-manager"
 AZURE_STORAGE_PATH="/mnt/ipfs-storage/ipfs"
 MAX_SIZE_GB=50  # Skip files larger than this (configurable)
+MISSED_FILE="docs/missed.txt"  # 2025-05-24: Added to track missed hashes - AI
 
 # Colors for output
 RED='\033[0;31m'
@@ -169,8 +170,9 @@ migrate_hash() {
     while [ $attempt -le $RETRY_ATTEMPTS ]; do
         print_status "Attempt $attempt: Downloading and pinning $hash..."
         
-        # Use timeout to prevent hanging
-        if timeout 300s ipfs pin add "$hash" 2>&1 | tee -a "$LOG_FILE"; then
+        # Use timeout to prevent hanging (30 seconds max)
+        # 2025-05-24: Changed from 300s to 30s to prevent script from getting stuck - AI
+        if timeout 30s ipfs pin add "$hash" 2>&1 | tee -a "$LOG_FILE"; then
             print_status "✓ Successfully migrated and pinned $hash"
             
             # Verify the pin with a more robust check
@@ -211,11 +213,16 @@ migrate_hash() {
     done
     
     print_error "✗ Failed to migrate $hash after $RETRY_ATTEMPTS attempts"
+    # 2025-05-24: Added to record missed hashes for later reference - AI
+    echo "$hash" >> "$MISSED_FILE"
     return 1
 }
 
 # Enhanced batch migration with better progress tracking
 migrate_from_file() {
+    # 2025-05-24: Ensure docs directory exists for missed.txt - AI
+    mkdir -p "$(dirname "$MISSED_FILE")"
+    
     if [[ ! -f "$HASH_LIST_FILE" ]]; then
         print_error "Hash list file not found: $HASH_LIST_FILE"
         print_status "Create a file with one IPFS hash per line"
@@ -260,7 +267,9 @@ migrate_from_file() {
                 successful=$((successful + 1))
             else
                 failed=$((failed + 1))
+                # 2025-05-24: Also add to missed.txt for consolidated tracking - AI
                 echo "$hash" >> "failed_migrations_$(date +%Y%m%d_%H%M%S).txt"
+                echo "$hash" >> "$MISSED_FILE"
             fi
         fi
         

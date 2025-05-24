@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 2025-05-24
+
+### Fixed
+- Modified `scripts/ipfs-migration.sh` to prevent getting stuck on failed downloads:
+  - Reduced timeout from 300s to 30s for IPFS pin operations
+  - Added automatic tracking of missed hashes in `docs/missed.txt`
+  - Improved error handling to ensure script continues after failures
+  - Added directory creation for missed files tracking
+
+<!-- FLAG: Modified 2025-05-24T10:43:51-04:00 -->
+
 ## [0.2.0] - 2025-05-22
 
 ### Added
