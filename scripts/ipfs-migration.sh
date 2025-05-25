@@ -177,6 +177,7 @@ migrate_hash() {
             
             # Verify the pin with a more robust check
             sleep 2  # Brief pause for pin to register
+            
             if ipfs pin ls --type=recursive 2>/dev/null | grep -q "^$hash"; then
                 print_status "✓ Pin verified for $hash"
                 
@@ -195,10 +196,24 @@ migrate_hash() {
                 return 0
             else
                 print_warning "Pin verification failed for $hash"
+                # 2025-05-24: Record verification failure and move on - AI
+                echo "$hash # Pin verification failed on $(date)" >> "$MISSED_FILE"
+                # 2025-05-24: Skip further attempts for verification failures - AI
+                print_status "Skipping further attempts due to verification failure"
+                return 1
             fi
         else
             local exit_code=$?
-            if [[ $exit_code -eq 124 ]]; then
+            local error_output=$(cat "$LOG_FILE" | tail -10)
+            
+            # 2025-05-24: Added specific handling for context canceled errors - AI
+            if echo "$error_output" | grep -q "context canceled"; then
+                print_error "✗ Context canceled for $hash"
+                echo "$hash # Context canceled on $(date)" >> "$MISSED_FILE"
+                # Skip further attempts for context canceled errors
+                print_status "Skipping further attempts due to context canceled error"
+                return 1
+            elif [[ $exit_code -eq 124 ]]; then
                 print_error "✗ Timeout downloading $hash (attempt $attempt/$RETRY_ATTEMPTS)"
             else
                 print_error "✗ Failed to migrate $hash (attempt $attempt/$RETRY_ATTEMPTS)"

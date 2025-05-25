@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2] - 2025-05-24
+
+### Fixed
+- Enhanced `scripts/ipfs-migration.sh` to handle pin verification failures:
+  - Added immediate recording of failed CIDs to `docs/missed.txt` with timestamps
+  - Implemented specific handling for "context canceled" errors
+  - Skip further pin attempts when verification fails to avoid endless loops
+  - Improved error messaging for better debugging
+
+<!-- FLAG: Modified 2025-05-24T22:45:57-04:00 -->
+
 ## [0.2.1] - 2025-05-24
 
 ### Fixed
